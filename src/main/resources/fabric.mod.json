@@ -1,41 +1,38 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "simple-immersive-bags",
 	"version": "${version}",
-	"name": "Example mod",
+	"name": "Simple Immersive Bags",
 	"description": "This is an example description! Tell everyone what your mod is about!",
 	"authors": [
-		"Me!"
+		"eggohito"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"issues": "https://github.com/eggohito/simple-immersive-bags/issues",
+		"sources": "https://github.com/eggohito/simple-immersive-bags"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/modid/icon.png",
+	"icon": "assets/simple-immersive-bags/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.ExampleMod"
+			"com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags"
 		],
 		"client": [
-			"com.example.ExampleModClient"
+			"com.github.eggohito.simple_immersive_bags.SimpleImmersiveBagsClient"
 		]
 	},
 	"mixins": [
-		"modid.mixins.json",
+		"simple-immersive-bags.mixins.json",
 		{
-			"config": "modid.client.mixins.json",
+			"config": "simple-immersive-bags.client.mixins.json",
 			"environment": "client"
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.15.0",
+		"fabricloader": ">=0.15.6",
 		"minecraft": "~1.20.4",
 		"java": ">=17",
 		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
 	}
 }
