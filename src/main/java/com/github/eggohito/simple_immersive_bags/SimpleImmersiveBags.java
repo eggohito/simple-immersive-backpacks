@@ -3,7 +3,6 @@ package com.github.eggohito.simple_immersive_bags;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.DyeableBagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.EnderBagItem;
-import com.github.eggohito.simple_immersive_bags.content.item.material.BagMaterials;
 import com.github.eggohito.simple_immersive_bags.networking.SimpleImmersiveBagsC2SPackets;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandlerTypes;
 import net.fabricmc.api.ModInitializer;
@@ -11,11 +10,13 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.cauldron.CauldronBehavior;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +63,8 @@ public class SimpleImmersiveBags implements ModInitializer {
 	private static void registerAllItems() {
 
 		//	Initialize the static item instances
-		BACKPACK = registerItem(id("backpack"), () -> new DyeableBagItem(BagMaterials.LEATHER, id("textures/gui/backpack.png"), 3, 9));
-		ENDER_BACKPACK = registerItem(id("ender_backpack"), () -> new EnderBagItem(BagMaterials.LEATHER, id("textures/gui/ender_backpack.png")));
+		BACKPACK = registerItem(id("backpack"), () -> new DyeableBagItem(id("textures/gui/backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 3, 9));
+		ENDER_BACKPACK = registerItem(id("ender_backpack"), () -> new EnderBagItem(id("textures/gui/ender_backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER));
 
 		//	Register cauldron behaviors
 		CauldronBehavior.WATER_CAULDRON_BEHAVIOR.map().put(BACKPACK, CauldronBehavior.CLEAN_DYEABLE_ITEM);

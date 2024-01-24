@@ -5,18 +5,24 @@ import com.github.eggohito.simple_immersive_bags.inventory.DelegatedBagInventory
 import com.github.eggohito.simple_immersive_bags.inventory.DelegatedGridInventory;
 import com.github.eggohito.simple_immersive_bags.inventory.GridInventory;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("unused")
 public class EnderBagItem extends BagItem {
 
-    public EnderBagItem(ArmorMaterial armorMaterial, Identifier screenTextureId) {
-        super(armorMaterial, screenTextureId, 3, 9);
+    public EnderBagItem(Identifier screenTextureId, EquipmentSlot equipSlot) {
+        super(screenTextureId, equipSlot, 3, 9);
+    }
+
+    public EnderBagItem(Identifier screenTextureId, EquipmentSlot equipSlot, SoundEvent equipSound) {
+        super(screenTextureId, equipSlot, equipSound, 3, 9);
     }
 
     @Nullable

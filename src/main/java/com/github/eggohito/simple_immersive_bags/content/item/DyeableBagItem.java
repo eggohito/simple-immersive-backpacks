@@ -1,14 +1,20 @@
 package com.github.eggohito.simple_immersive_bags.content.item;
 
-import net.minecraft.item.ArmorMaterial;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.DyeableItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
+@SuppressWarnings("unused")
 public class DyeableBagItem extends BagItem implements DyeableItem {
 
-    public DyeableBagItem(ArmorMaterial armorMaterial, Identifier screenTextureId, int initialRows, int initialColumns) {
-        super(armorMaterial, screenTextureId, initialRows, initialColumns);
+    public DyeableBagItem(Identifier screenTextureId, EquipmentSlot equipSlot, int initialRows, int initialColumns) {
+        super(screenTextureId, equipSlot, initialRows, initialColumns);
+    }
+
+    public DyeableBagItem(Identifier screenTextureId, EquipmentSlot equipSlot, SoundEvent equipSound, int initialRows, int initialColumns) {
+        super(screenTextureId, equipSlot, equipSound, initialRows, initialColumns);
     }
 
     public static float[] unpackRgb(ItemStack stack) {
