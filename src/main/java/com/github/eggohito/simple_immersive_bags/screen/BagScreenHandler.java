@@ -28,7 +28,7 @@ public class BagScreenHandler extends PlayerScreenHandler {
         bagInventory.onOpen(player);
 
         this.bagStart = this.slots.size();
-        this.bagEnd = bagStart + 26;
+        this.bagEnd = bagStart + bagInventory.size();
 
         //  Override the sync ID constant and screen handler type set in PlayerScreenHandler
         ((ScreenHandlerAccessor) this).setSyncId(syncId);
@@ -89,9 +89,9 @@ public class BagScreenHandler extends PlayerScreenHandler {
         }
 
         ItemStack stackInSlot = slot.getStack();
-        ItemStack resultStack = stackInSlot.copy();
+        ItemStack previousStack = stackInSlot.copy();
 
-        EquipmentSlot equipmentSlot = LivingEntity.getPreferredEquipmentSlot(resultStack);
+        EquipmentSlot equipmentSlot = LivingEntity.getPreferredEquipmentSlot(previousStack);
         int equipmentIndex = 8 - equipmentSlot.getEntitySlotId();
 
         if (slotIndex == 0) {
@@ -100,7 +100,7 @@ public class BagScreenHandler extends PlayerScreenHandler {
                 return ItemStack.EMPTY;
             }
 
-            slot.onQuickTransfer(stackInSlot, resultStack);
+            slot.onQuickTransfer(stackInSlot, previousStack);
 
         }
 
@@ -138,16 +138,16 @@ public class BagScreenHandler extends PlayerScreenHandler {
 
         else if (slotIndex >= INVENTORY_START && slotIndex < INVENTORY_END) {
 
-            if (!this.insertItem(stackInSlot, INVENTORY_END, HOTBAR_END, false)) {
+            if (!this.insertItem(stackInSlot, HOTBAR_START, HOTBAR_END, false)) {
                 return ItemStack.EMPTY;
             }
 
         }
 
-        else if (slotIndex >= INVENTORY_END && slotIndex < HOTBAR_END) {
+        else if (slotIndex >= HOTBAR_START && slotIndex < HOTBAR_END) {
 
-            if (!this.insertItem(stackInSlot, bagStart, bagEnd + 1, false)) {
-                return ItemStack.EMPTY;
+            if (!this.insertItem(stackInSlot, bagStart, bagEnd, false)) {
+                return super.quickMove(player, slotIndex);
             }
 
         }
@@ -157,14 +157,14 @@ public class BagScreenHandler extends PlayerScreenHandler {
         }
 
         if (stackInSlot.isEmpty()) {
-            slot.setStack(ItemStack.EMPTY, resultStack);
+            slot.setStack(ItemStack.EMPTY, previousStack);
         }
 
         else {
             slot.markDirty();
         }
 
-        if (stackInSlot.getCount() == resultStack.getCount()) {
+        if (stackInSlot.getCount() == previousStack.getCount()) {
             return ItemStack.EMPTY;
         }
 
@@ -173,7 +173,7 @@ public class BagScreenHandler extends PlayerScreenHandler {
             player.dropItem(stackInSlot, false);
         }
 
-        return resultStack;
+        return previousStack;
 
     }
 
