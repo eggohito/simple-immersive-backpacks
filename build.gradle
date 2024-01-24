@@ -23,6 +23,7 @@ repositories {
 
 loom {
 
+	accessWidenerPath = file("src/main/resources/simple-immersive-bags.accesswidener")
     splitEnvironmentSourceSets()
 
 	mods {

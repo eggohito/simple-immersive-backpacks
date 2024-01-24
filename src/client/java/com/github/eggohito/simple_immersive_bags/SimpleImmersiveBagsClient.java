@@ -1,9 +1,13 @@
 package com.github.eggohito.simple_immersive_bags;
 
 import com.github.eggohito.simple_immersive_bags.client.renderer.BackpackArmorRenderer;
+import com.github.eggohito.simple_immersive_bags.client.screen.BagScreen;
+import com.github.eggohito.simple_immersive_bags.networking.SimpleImmersiveBagsS2CPackets;
+import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandlerTypes;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.item.DyeableItem;
 
 public class SimpleImmersiveBagsClient implements ClientModInitializer {
@@ -21,6 +25,9 @@ public class SimpleImmersiveBagsClient implements ClientModInitializer {
 
 		ArmorRenderer.register(BACKPACK_ARMOR_RENDERER, SimpleImmersiveBags.BACKPACK);
 		ArmorRenderer.register(ENDER_BACKPACK_ARMOR_RENDERER, SimpleImmersiveBags.ENDER_BACKPACK);
+
+		HandledScreens.register(BagScreenHandlerTypes.GENERIC_BAG, BagScreen::new);
+		SimpleImmersiveBagsS2CPackets.registerAll();
 
 	}
 

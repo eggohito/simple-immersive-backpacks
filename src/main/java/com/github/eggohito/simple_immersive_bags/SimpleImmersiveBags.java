@@ -1,9 +1,13 @@
 package com.github.eggohito.simple_immersive_bags;
 
+import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.DyeableBagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.EnderBagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.material.BagMaterials;
+import com.github.eggohito.simple_immersive_bags.networking.SimpleImmersiveBagsC2SPackets;
+import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandlerTypes;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.cauldron.CauldronBehavior;
@@ -48,6 +52,8 @@ public class SimpleImmersiveBags implements ModInitializer {
 		});
 
 		registerAllItems();
+		BagScreenHandlerTypes.registerAll();
+		SimpleImmersiveBagsC2SPackets.registerAll();
 
 		LOGGER.info("Simple Immersive Bags {} has been initialized!", VERSION);
 
@@ -56,8 +62,8 @@ public class SimpleImmersiveBags implements ModInitializer {
 	private static void registerAllItems() {
 
 		//	Initialize the static item instances
-		BACKPACK = register(Registries.ITEM, id("backpack"), () -> new DyeableBagItem(BagMaterials.LEATHER, id("backpack"), 3, 9));
-		ENDER_BACKPACK = register(Registries.ITEM, id("ender_backpack"), () -> new EnderBagItem(BagMaterials.LEATHER, id("ender_backpack"), 3, 9));
+		BACKPACK = registerItem(id("backpack"), () -> new DyeableBagItem(BagMaterials.LEATHER, id("textures/gui/backpack.png"), 3, 9));
+		ENDER_BACKPACK = registerItem(id("ender_backpack"), () -> new EnderBagItem(BagMaterials.LEATHER, id("textures/gui/ender_backpack.png")));
 
 		//	Register cauldron behaviors
 		CauldronBehavior.WATER_CAULDRON_BEHAVIOR.map().put(BACKPACK, CauldronBehavior.CLEAN_DYEABLE_ITEM);
@@ -67,14 +73,17 @@ public class SimpleImmersiveBags implements ModInitializer {
 			entries.addAfter(Items.NETHERITE_BOOTS, BACKPACK, ENDER_BACKPACK)
 		);
 
+		//	Register callback event for stuff
+		ServerEntityEvents.EQUIPMENT_CHANGE.register(BagItem::onEquipmentUpdate);
+
 	}
 
 	public static Identifier id(String path) {
 		return new Identifier(MOD_NAMESPACE, path);
 	}
 
-	public static <T> T register(Registry<T> registry, Identifier id, Supplier<T> entrySupplier) {
-		return Registry.register(registry, id, entrySupplier.get());
+	public static <T extends Item> T registerItem(Identifier id, Supplier<T> entrySupplier) {
+		return Registry.register(Registries.ITEM, id, entrySupplier.get());
 	}
 
 }
