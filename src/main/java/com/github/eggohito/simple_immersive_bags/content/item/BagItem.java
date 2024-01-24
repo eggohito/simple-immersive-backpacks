@@ -1,5 +1,7 @@
 package com.github.eggohito.simple_immersive_bags.content.item;
 
+import com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags;
+import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
 import com.github.eggohito.simple_immersive_bags.inventory.BagInventory;
 import com.github.eggohito.simple_immersive_bags.networking.s2c.OpenInventoryS2CPacket;
@@ -13,10 +15,12 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Equipment;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
@@ -27,6 +31,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +40,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
-public class BagItem extends Item implements Equipment, ExtendedScreenHandlerFactory {
+public class BagItem extends Item implements Equipment, BagContainer, ExtendedScreenHandlerFactory {
 
     protected final Identifier screenTextureId;
     protected final EquipmentSlot equipSlot;
@@ -55,17 +60,19 @@ public class BagItem extends Item implements Equipment, ExtendedScreenHandlerFac
 
     public BagItem(Identifier screenTextureId, EquipmentSlot equipSlot, SoundEvent equipSound, Settings settings, int initialRows, int initialColumns) {
         super(settings);
-        DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
 
         Preconditions.checkArgument(initialRows > 0, "Row argument cannot be equal or less than 0!");
         Preconditions.checkArgument(initialColumns > 0, "Column argument cannot be equal or less than 0!");
 
-        this.screenTextureId = screenTextureId;
-        this.equipSlot = equipSlot;
-        this.equipSound = equipSound;
+        SimpleImmersiveBags.ITEM_CONTAINER.registerSelf(this);
+        DispenserBlock.registerBehavior(this, ArmorItem.DISPENSER_BEHAVIOR);
 
         this.initialRows = initialRows;
         this.initialColumns = initialColumns;
+
+        this.screenTextureId = screenTextureId;
+        this.equipSlot = equipSlot;
+        this.equipSound = equipSound;
 
     }
 
@@ -118,6 +125,27 @@ public class BagItem extends Item implements Equipment, ExtendedScreenHandlerFac
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ((EntityBagUpdateStatus) user).sib$setStatus(BagUpdateStatus.EQUIP);
         return this.equipAndSwap(this, world, user, hand);
+    }
+
+    @Override
+    public DefaultedList<ItemStack> getContents(ItemStack sourceStack) {
+
+        DefaultedList<ItemStack> contents = DefaultedList.ofSize(initialRows * initialColumns, ItemStack.EMPTY);
+        NbtCompound stackNbt;
+
+        if ((stackNbt = sourceStack.getNbt()) == null || !stackNbt.contains(SimpleImmersiveBags.ITEM_CONTAINER_ID)) {
+            return contents;
+        }
+
+        Inventories.readNbt(stackNbt.getCompound(SimpleImmersiveBags.ITEM_CONTAINER_ID), contents);
+        return contents;
+
+    }
+
+    @Override
+    public void setContents(ItemStack sourceStack, DefaultedList<ItemStack> contents) {
+        NbtCompound itemContainerNbt = sourceStack.getOrCreateSubNbt(SimpleImmersiveBags.ITEM_CONTAINER_ID);
+        Inventories.writeNbt(itemContainerNbt, contents);
     }
 
     public static Optional<EquipmentSlot> getSlotWithBag(PlayerEntity player) {

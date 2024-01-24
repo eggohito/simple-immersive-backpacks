@@ -5,8 +5,8 @@
     "mixins": [
         "ArmorItemAccessor",
         "LivingEntityMixin",
-        "ScreenHandlerMixin",
         "ScreenHandlerAccessor",
+        "ScreenHandlerMixin",
         "SlotAccessor"
     ],
     "injectors": {

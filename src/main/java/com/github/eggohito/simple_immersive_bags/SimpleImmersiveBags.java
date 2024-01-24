@@ -1,5 +1,6 @@
 package com.github.eggohito.simple_immersive_bags;
 
+import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.DyeableBagItem;
 import com.github.eggohito.simple_immersive_bags.content.item.EnderBagItem;
@@ -8,6 +9,7 @@ import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandlerTypes;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.lookup.v1.item.ItemApiLookup;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
@@ -28,6 +30,7 @@ public class SimpleImmersiveBags implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAMESPACE);
 
 	public static final String ITEM_CONTAINER_ID = id("item_container").toString();
+	public static final ItemApiLookup<BagContainer, Void> ITEM_CONTAINER = ItemApiLookup.get(new Identifier(ITEM_CONTAINER_ID), BagContainer.class, Void.class);
 
 	public static String VERSION;
 	public static int[] SEMANTIC_VERSION;

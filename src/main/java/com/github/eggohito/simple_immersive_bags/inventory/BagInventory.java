@@ -1,14 +1,13 @@
 package com.github.eggohito.simple_immersive_bags.inventory;
 
 import com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags;
-import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
+import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
 import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 
 @SuppressWarnings("unused")
 public class BagInventory extends GridInventory {
@@ -69,33 +68,33 @@ public class BagInventory extends GridInventory {
 
     public void load() {
 
-        if (!(sourceStack.getItem() instanceof BagItem)) {
-            SimpleImmersiveBags.LOGGER.warn("Tried loading the contents of bag inventory of item {}, which isn't a bag item!", sourceStack);
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
+        if (bagContainer == null) {
+            SimpleImmersiveBags.LOGGER.error("Tried loading the bag inventory contents of item {}, which isn't a bag item!", sourceStack);
             return;
         }
 
-        NbtCompound stackNbt;
-        if ((stackNbt = sourceStack.getNbt()) != null && stackNbt.contains(SimpleImmersiveBags.ITEM_CONTAINER_ID)) {
-            Inventories.readNbt(stackNbt.getCompound(SimpleImmersiveBags.ITEM_CONTAINER_ID), this.getHeldStacks());
+        DefaultedList<ItemStack> contents = bagContainer.getContents(sourceStack);
+        for (int i = 0; i < this.size(); i++) {
+            this.getHeldStacks().set(i, contents.get(i));
         }
 
     }
 
     public void save() {
 
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
+        if (bagContainer == null) {
+            SimpleImmersiveBags.LOGGER.warn("Tried saving the bag inventory contents of item {}, which isn't a bag item!", sourceStack);
+            return;
+        }
+
         if (!save) {
-            SimpleImmersiveBags.LOGGER.warn("Tried saving the contents of the bag inventory of item {}, which is not saveable!", sourceStack);
+            SimpleImmersiveBags.LOGGER.warn("Tried saving the bag inventory contents of item {}, which can't be saved!", sourceStack);
             return;
         }
 
-        if (!(sourceStack.getItem() instanceof BagItem)) {
-            SimpleImmersiveBags.LOGGER.warn("Tried saving the contents of the bag inventory of item {}, which isn't a bag item!", sourceStack);
-            return;
-        }
-
-        NbtCompound itemContainerNbt = sourceStack.getOrCreateSubNbt(SimpleImmersiveBags.ITEM_CONTAINER_ID);
-        Inventories.writeNbt(itemContainerNbt, this.getHeldStacks());
-
+        bagContainer.setContents(sourceStack, this.getHeldStacks());
         this.dirty = false;
 
     }
