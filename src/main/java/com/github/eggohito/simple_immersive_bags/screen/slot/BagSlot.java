@@ -26,7 +26,7 @@ public class BagSlot extends Slot {
     public boolean canInsert(ItemStack stack) {
         BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stack, null);
         return inventory instanceof DelegatedBagInventory
-            || (bagContainer==null||bagContainer.getContents(stack).isEmpty());
+            || (bagContainer == null || bagContainer.isEmpty(stack));
     }
 
 }

@@ -9,4 +9,10 @@ public interface BagContainer {
 
     void setContents(ItemStack sourceStack, DefaultedList<ItemStack> replacement);
 
+    default boolean isEmpty(ItemStack sourceStack) {
+        return this.getContents(sourceStack)
+            .stream()
+            .allMatch(ItemStack::isEmpty);
+    }
+
 }
