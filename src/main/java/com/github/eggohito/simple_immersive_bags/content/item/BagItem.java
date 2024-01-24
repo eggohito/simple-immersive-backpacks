@@ -126,6 +126,11 @@ public class BagItem extends Item implements Equipment, BagContainer, ExtendedSc
     }
 
     @Override
+    public void onItemEntityDestroyed(ItemEntity entity) {
+        ItemUsage.spawnItemContents(entity, this.getContents(entity.getStack()).stream());
+    }
+
+    @Override
     public DefaultedList<ItemStack> getContents(ItemStack sourceStack) {
 
         DefaultedList<ItemStack> contents = DefaultedList.ofSize(initialRows * initialColumns, ItemStack.EMPTY);
