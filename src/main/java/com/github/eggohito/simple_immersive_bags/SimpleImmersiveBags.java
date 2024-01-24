@@ -9,7 +9,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.cauldron.CauldronBehavior;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -65,9 +64,6 @@ public class SimpleImmersiveBags implements ModInitializer {
 		//	Initialize the static item instances
 		BACKPACK = registerItem(id("backpack"), () -> new DyeableBagItem(id("textures/gui/backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 3, 9));
 		ENDER_BACKPACK = registerItem(id("ender_backpack"), () -> new EnderBagItem(id("textures/gui/ender_backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER));
-
-		//	Register cauldron behaviors
-		CauldronBehavior.WATER_CAULDRON_BEHAVIOR.map().put(BACKPACK, CauldronBehavior.CLEAN_DYEABLE_ITEM);
 
 		//	Add the items to an item group
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries ->

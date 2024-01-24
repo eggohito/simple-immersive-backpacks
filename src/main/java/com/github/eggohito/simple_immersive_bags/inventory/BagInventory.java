@@ -79,8 +79,6 @@ public class BagInventory extends GridInventory {
             Inventories.readNbt(stackNbt.getCompound(SimpleImmersiveBags.ITEM_CONTAINER_ID), this.getHeldStacks());
         }
 
-        SimpleImmersiveBags.LOGGER.warn("Bag inventory of bag item {} has been loaded!", sourceStack);
-
     }
 
     public void save() {

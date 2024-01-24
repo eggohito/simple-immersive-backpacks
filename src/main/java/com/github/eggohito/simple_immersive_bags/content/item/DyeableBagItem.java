@@ -1,20 +1,23 @@
 package com.github.eggohito.simple_immersive_bags.content.item;
 
+import net.minecraft.block.cauldron.CauldronBehavior;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.DyeableItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 
 @SuppressWarnings("unused")
 public class DyeableBagItem extends BagItem implements DyeableItem {
 
     public DyeableBagItem(Identifier screenTextureId, EquipmentSlot equipSlot, int initialRows, int initialColumns) {
-        super(screenTextureId, equipSlot, initialRows, initialColumns);
+        this(screenTextureId, equipSlot, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, initialRows, initialColumns);
     }
 
     public DyeableBagItem(Identifier screenTextureId, EquipmentSlot equipSlot, SoundEvent equipSound, int initialRows, int initialColumns) {
         super(screenTextureId, equipSlot, equipSound, initialRows, initialColumns);
+        CauldronBehavior.WATER_CAULDRON_BEHAVIOR.map().put(this, CauldronBehavior.CLEAN_DYEABLE_ITEM);
     }
 
     public static float[] unpackRgb(ItemStack stack) {
@@ -31,7 +34,6 @@ public class DyeableBagItem extends BagItem implements DyeableItem {
         rgb[2] = (float) (i & 255) / 255.0f;
 
         return rgb;
-
 
     }
 
