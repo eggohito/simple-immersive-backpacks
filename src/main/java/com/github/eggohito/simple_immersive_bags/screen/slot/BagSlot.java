@@ -2,8 +2,9 @@ package com.github.eggohito.simple_immersive_bags.screen.slot;
 
 import com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
+import com.github.eggohito.simple_immersive_bags.inventory.BagInventory;
+import com.github.eggohito.simple_immersive_bags.inventory.DelegatedBagInventory;
 import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -16,7 +17,7 @@ public class BagSlot extends Slot {
 
     private final int offsetIndex;
 
-    public BagSlot(Inventory inventory, int index, int x, int y) {
+    public BagSlot(BagInventory inventory, int index, int x, int y) {
         super(inventory, index - PlayerScreenHandler.INVENTORY_END, x, y);
         this.offsetIndex = index;
     }
@@ -29,7 +30,7 @@ public class BagSlot extends Slot {
     @Override
     public boolean canInsert(ItemStack stack) {
 
-        if (!(stack.getItem() instanceof BagItem)) {
+        if (!(stack.getItem() instanceof BagItem) || inventory instanceof DelegatedBagInventory) {
             return super.canInsert(stack);
         }
 
