@@ -23,7 +23,7 @@ public class SimpleImmersiveBagsC2SPackets {
         ItemStack equippedStack = player.getEquippedStack(packet.slotWithBag());
 
         if (equippedStack.getItem() instanceof BagItem bagItem) {
-            player.openHandledScreen(bagItem);
+            player.openHandledScreen(bagItem.asDelegatedBagInventory(player, equippedStack));
         }
 
     }

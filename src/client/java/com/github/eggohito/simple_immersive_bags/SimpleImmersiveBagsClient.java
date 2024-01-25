@@ -9,8 +9,11 @@ import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
 import net.minecraft.item.DyeableItem;
+import net.minecraft.util.Identifier;
 
 public class SimpleImmersiveBagsClient implements ClientModInitializer {
+
+	public static final Identifier VANILLA_RECIPE_BOOK_WIDGET_ID = new Identifier("minecraft:widgets/recipe_book");
 
 	public static final BackpackArmorRenderer BACKPACK_ARMOR_RENDERER = new BackpackArmorRenderer(SimpleImmersiveBags.id("textures/armor/backpack.png"));
 	public static final BackpackArmorRenderer ENDER_BACKPACK_ARMOR_RENDERER = new BackpackArmorRenderer(SimpleImmersiveBags.id("textures/armor/ender_backpack.png"));

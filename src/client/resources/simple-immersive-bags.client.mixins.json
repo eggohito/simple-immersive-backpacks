@@ -3,8 +3,10 @@
     "package": "com.github.eggohito.simple_immersive_bags.mixin.client",
     "compatibilityLevel": "JAVA_17",
     "client": [
-        "MinecraftClientMixin",
+        "ButtonWidgetMixin",
         "HandledScreenAccessor",
+        "InventoryScreenMixin",
+        "MinecraftClientMixin",
         "ScreenAccessor"
     ],
     "injectors": {

@@ -9,36 +9,30 @@ import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
 import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
 import com.google.common.base.Preconditions;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
-public class BagItem extends Item implements Equipment, BagContainer, ExtendedScreenHandlerFactory {
+public class BagItem extends Item implements Equipment, BagContainer {
 
     protected final Identifier screenTextureId;
     protected final EquipmentSlot equipSlot;
@@ -89,36 +83,6 @@ public class BagItem extends Item implements Equipment, BagContainer, ExtendedSc
         return false;
     }
 
-    @Nullable
-    @Override
-    public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-
-        ItemStack equippedStack = player.getEquippedStack(this.getSlotType());
-        if (!equippedStack.isOf(this)) {
-            return null;
-        }
-
-        BagInventory bagInventory = new BagInventory(equippedStack, screenTextureId, initialRows, initialColumns);
-        return new BagScreenHandler(syncId, playerInventory, player, bagInventory);
-
-    }
-
-    @Override
-    public void writeScreenOpeningData(ServerPlayerEntity player, PacketByteBuf buf) {
-
-        buf.writeVarInt(initialRows);
-        buf.writeVarInt(initialColumns);
-
-        buf.writeEnumConstant(this.getSlotType());
-        buf.writeIdentifier(screenTextureId);
-
-    }
-
-    @Override
-    public Text getDisplayName() {
-        return Text.empty();
-    }
-
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ((EntityBagUpdateStatus) user).sib$setStatus(BagUpdateStatus.EQUIP);
@@ -149,6 +113,16 @@ public class BagItem extends Item implements Equipment, BagContainer, ExtendedSc
     public void setContents(ItemStack sourceStack, DefaultedList<ItemStack> contents) {
         NbtCompound itemContainerNbt = sourceStack.getOrCreateSubNbt(SimpleImmersiveBags.ITEM_CONTAINER_ID);
         Inventories.writeNbt(itemContainerNbt, contents);
+    }
+
+    public BagInventory asDelegatedBagInventory(LivingEntity holder, ItemStack stack) {
+        return this.asBagInventory(stack);
+    }
+
+    public BagInventory asBagInventory(ItemStack stack) {
+        return stack.isOf(this)
+            ? new BagInventory(stack, screenTextureId, initialRows, initialColumns)
+            : BagInventory.EMPTY;
     }
 
     public static Optional<EquipmentSlot> getSlotWithBag(PlayerEntity player) {
@@ -188,9 +162,7 @@ public class BagItem extends Item implements Equipment, BagContainer, ExtendedSc
             player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
         }
 
-        player.onHandledScreenClosed();
-        player.openHandledScreen(bagItem);
-
+        player.openHandledScreen(bagItem.asDelegatedBagInventory(player, bagStack));
         player.currentScreenHandler.sendContentUpdates();
 
         if (shouldResetCursorStack) {

@@ -14,9 +14,20 @@ import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
+@SuppressWarnings("unused")
 public class BagScreenHandler extends PlayerScreenHandler {
 
+    public static final int BAG_TITLE_Y_OFFSET = 11;
+    public static final int BAG_SLOT_Y_OFFSET = 58;
+    public static final int BAG_SLOT_INDEX_OFFSET = INVENTORY_END;
+
     private final BagInventory bagInventory;
+
+    private final int topSlotX;
+    private final int topSlotY;
+
+    private final int offhandSlotX;
+    private final int offhandSlotY;
 
     private final int bagStart;
     private final int bagEnd;
@@ -34,15 +45,26 @@ public class BagScreenHandler extends PlayerScreenHandler {
         ((ScreenHandlerAccessor) this).setSyncId(syncId);
         ((ScreenHandlerAccessor) this).setType(BagScreenHandlerTypes.GENERIC_BAG);
 
-        //  Offset the slots added in PlayerScreenHandler
+        //  Query the top-left most slot from the player's inventory
+        Slot topSlot = this.getSlot(9);
+
+        //  Query the X and Y values of the top-left most slot from the player's inventory
+        //  (used to determine the placement of the bag's slots)
+        this.topSlotX = topSlot.x;
+        this.topSlotY = topSlot.y;
+
+        //  Offset the player's inventory and hotbar slots added in PlayerScreenHandler
         this.slots.stream()
             .filter(slot -> slot.inventory == playerInventory && slot.getIndex() < playerInventory.size() - 5)
-            .forEach(slot -> ((SlotAccessor) slot).setY(slot.y + 58));
+            .forEach(slot -> ((SlotAccessor) slot).setY(slot.y + BAG_SLOT_Y_OFFSET + BAG_TITLE_Y_OFFSET));
 
-        Slot slotAnchor = slots.get(9);
+        //  Query the offhand slot from the player's inventory
+        Slot offhandSlot = this.getSlot(OFFHAND_ID);
 
-        int left = slotAnchor.x;
-        int top = slotAnchor.y - 58;
+        //  Query the X and Y values of the offhand slot from the player's inventory
+        //  (used to determine the placement of the moved recipe book widget)
+        this.offhandSlotX = offhandSlot.x;
+        this.offhandSlotY = offhandSlot.y;
 
         int bagRows = bagInventory.getRows();
         int bagColumns = bagInventory.getColumns();
@@ -51,10 +73,14 @@ public class BagScreenHandler extends PlayerScreenHandler {
             for (int columnIndex = 0; columnIndex < bagColumns; columnIndex++) {
 
                 //  Calculate the slot index for the bag's slot
-                int slotIndex = columnIndex + rowIndex * 9 + INVENTORY_END;
+                int bagSlotIndex = columnIndex + rowIndex * 9 + BAG_SLOT_INDEX_OFFSET;
+
+                //  Calculate the X and Y values for the bag's slot
+                int bagSlotX = topSlotX + columnIndex * 18;
+                int bagSlotY = (topSlotY + rowIndex * 18) + BAG_TITLE_Y_OFFSET;
 
                 //  Add the slot that corresponds to the bag's inventory with the calculated slot index
-                this.addSlot(new BagSlot(bagInventory, slotIndex, left + columnIndex * 18, top + rowIndex * 18));
+                this.addSlot(new BagSlot(bagInventory, bagSlotIndex, bagSlotX, bagSlotY));
 
             }
         }
@@ -62,16 +88,8 @@ public class BagScreenHandler extends PlayerScreenHandler {
     }
 
     public static BagScreenHandler create(int syncId, PlayerInventory playerInventory, PacketByteBuf buf) {
-
-        int initialRows = buf.readVarInt();
-        int initialColumns = buf.readVarInt();
-
-        EquipmentSlot equipmentSlot = buf.readEnumConstant(EquipmentSlot.class);
-        Identifier textureId = buf.readIdentifier();
-
-        ItemStack equippedStack = playerInventory.player.getEquippedStack(equipmentSlot);
-        return new BagScreenHandler(syncId, playerInventory, playerInventory.player, new BagInventory(equippedStack, textureId, initialRows, initialColumns));
-
+        PlayerEntity player = playerInventory.player;
+        return new BagScreenHandler(syncId, playerInventory, player, BagInventory.receive(player, buf));
     }
 
     @Override
@@ -187,6 +205,30 @@ public class BagScreenHandler extends PlayerScreenHandler {
 
     public BagInventory getBagInventory() {
         return bagInventory;
+    }
+
+    public int getRows() {
+        return bagInventory.getRows();
+    }
+
+    public int getColumns() {
+        return bagInventory.getColumns();
+    }
+
+    public int getOffhandSlotX() {
+        return offhandSlotX;
+    }
+
+    public int getOffhandSlotY() {
+        return offhandSlotY;
+    }
+
+    public int getTopSlotX() {
+        return topSlotX;
+    }
+
+    public int getTopSlotY() {
+        return topSlotY;
     }
 
 }
