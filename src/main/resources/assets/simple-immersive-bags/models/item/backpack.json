@@ -1,7 +1,15 @@
 {
     "parent": "item/generated",
     "textures": {
-        "layer0": "simple-immersive-bags:item/backpack",
+        "layer0": "simple-immersive-bags:item/backpack/closed",
         "layer1": "simple-immersive-bags:item/backpack/overlay"
-    }
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "simple-immersive-bags:state": 1
+            },
+            "model": "simple-immersive-bags:item/backpack/opened"
+        }
+    ]
 }

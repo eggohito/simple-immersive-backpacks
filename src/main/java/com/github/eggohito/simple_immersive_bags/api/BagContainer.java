@@ -1,5 +1,6 @@
 package com.github.eggohito.simple_immersive_bags.api;
 
+import com.github.eggohito.simple_immersive_bags.util.BagState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
 
@@ -14,5 +15,9 @@ public interface BagContainer {
             .stream()
             .allMatch(ItemStack::isEmpty);
     }
+
+    BagState getState(ItemStack sourceStack);
+
+    void setState(ItemStack sourceStack, BagState state);
 
 }

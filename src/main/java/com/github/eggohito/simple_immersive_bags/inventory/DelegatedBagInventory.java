@@ -17,17 +17,19 @@ public class DelegatedBagInventory extends BagInventory {
     private final GridInventory delegate;
 
     public DelegatedBagInventory(ItemStack sourceStack, Identifier screenTextureId, GridInventory inventory) {
-        super(sourceStack, screenTextureId, false, inventory.getRows(), inventory.getColumns());
+        super(sourceStack, screenTextureId, false, false, inventory.getRows(), inventory.getColumns());
         this.delegate = inventory;
     }
 
     @Override
     public void onOpen(PlayerEntity player) {
+        super.onOpen(player);
         delegate.onOpen(player);
     }
 
     @Override
     public void onClose(PlayerEntity player) {
+        super.onClose(player);
         delegate.onClose(player);
     }
 

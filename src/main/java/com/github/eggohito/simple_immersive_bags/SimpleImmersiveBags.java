@@ -70,7 +70,7 @@ public class SimpleImmersiveBags implements ModInitializer {
 
 		//	Add the items to an item group
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries ->
-			entries.addAfter(Items.NETHERITE_BOOTS, BACKPACK, ENDER_BACKPACK)
+			entries.addAfter(Items.NETHERITE_BOOTS, BACKPACK.getDefaultStack(), ENDER_BACKPACK.getDefaultStack())
 		);
 
 		//	Register callback event for stuff

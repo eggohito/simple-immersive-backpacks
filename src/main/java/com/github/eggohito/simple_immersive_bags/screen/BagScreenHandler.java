@@ -69,18 +69,17 @@ public class BagScreenHandler extends PlayerScreenHandler {
         int bagRows = bagInventory.getRows();
         int bagColumns = bagInventory.getColumns();
 
+        int bagSlotIndex = BAG_SLOT_INDEX_OFFSET;
+
         for (int rowIndex = 0; rowIndex < bagRows; rowIndex++) {
             for (int columnIndex = 0; columnIndex < bagColumns; columnIndex++) {
-
-                //  Calculate the slot index for the bag's slot
-                int bagSlotIndex = columnIndex + rowIndex * 9 + BAG_SLOT_INDEX_OFFSET;
 
                 //  Calculate the X and Y values for the bag's slot
                 int bagSlotX = topSlotX + columnIndex * 18;
                 int bagSlotY = (topSlotY + rowIndex * 18) + BAG_TITLE_Y_OFFSET;
 
                 //  Add the slot that corresponds to the bag's inventory with the calculated slot index
-                this.addSlot(new BagSlot(bagInventory, bagSlotIndex, bagSlotX, bagSlotY));
+                this.addSlot(new BagSlot(bagInventory, bagSlotIndex++, bagSlotX, bagSlotY));
 
             }
         }

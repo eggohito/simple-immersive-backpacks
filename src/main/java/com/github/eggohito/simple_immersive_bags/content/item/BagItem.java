@@ -6,8 +6,11 @@ import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
 import com.github.eggohito.simple_immersive_bags.inventory.BagInventory;
 import com.github.eggohito.simple_immersive_bags.networking.s2c.OpenInventoryS2CPacket;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
+import com.github.eggohito.simple_immersive_bags.util.BagState;
 import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
+import com.github.eggohito.simple_immersive_bags.util.BagUtil;
 import com.google.common.base.Preconditions;
+import com.mojang.datafixers.util.Pair;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.entity.EquipmentSlot;
@@ -15,12 +18,16 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.StackReference;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ClickType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
@@ -28,7 +35,6 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
@@ -95,6 +101,43 @@ public class BagItem extends Item implements Equipment, BagContainer {
     }
 
     @Override
+    public boolean onClicked(ItemStack stack, ItemStack otherStack, Slot slot, ClickType clickType, PlayerEntity player, StackReference cursorStackReference) {
+
+        if (!BagUtil.withinEquipmentBounds(slot.id) || clickType == ClickType.LEFT || !stack.isOf(this)) {
+            return false;
+        }
+
+        return switch (this.getState(stack)) {
+            case OPENED -> {
+                this.setState(stack, BagState.CLOSED);
+                yield true;
+            }
+            case CLOSED -> {
+                this.setState(stack, BagState.OPENED);
+                yield true;
+            }
+            default ->
+                false;
+        };
+
+    }
+
+    @Override
+    public ItemStack getDefaultStack() {
+
+        ItemStack stack = super.getDefaultStack();
+        this.setState(stack, BagState.CLOSED);
+
+        return stack;
+
+    }
+
+    @Override
+    public void onCraft(ItemStack stack, World world) {
+        this.setState(stack, BagState.CLOSED);
+    }
+
+    @Override
     public DefaultedList<ItemStack> getContents(ItemStack sourceStack) {
 
         DefaultedList<ItemStack> contents = DefaultedList.ofSize(initialRows * initialColumns, ItemStack.EMPTY);
@@ -115,6 +158,29 @@ public class BagItem extends Item implements Equipment, BagContainer {
         Inventories.writeNbt(itemContainerNbt, contents);
     }
 
+    @Override
+    public BagState getState(ItemStack sourceStack) {
+
+        NbtCompound stackNbt;
+        if ((stackNbt = sourceStack.getNbt()) == null || !stackNbt.contains(SimpleImmersiveBags.ITEM_CONTAINER_ID)) {
+            return BagState.NONE;
+        }
+
+        NbtCompound itemContainerNbt = stackNbt.getCompound(SimpleImmersiveBags.ITEM_CONTAINER_ID);
+        return BagState.CODEC
+            .decode(NbtOps.INSTANCE, itemContainerNbt.get("State"))
+            .result()
+            .map(Pair::getFirst)
+            .orElse(BagState.NONE);
+
+    }
+
+    @Override
+    public void setState(ItemStack sourceStack, BagState state) {
+        NbtCompound itemContainerNbt = sourceStack.getOrCreateSubNbt(SimpleImmersiveBags.ITEM_CONTAINER_ID);
+        itemContainerNbt.putString("State", state.asString());
+    }
+
     public BagInventory asDelegatedBagInventory(LivingEntity holder, ItemStack stack) {
         return this.asBagInventory(stack);
     }
@@ -125,11 +191,25 @@ public class BagItem extends Item implements Equipment, BagContainer {
             : BagInventory.EMPTY;
     }
 
-    public static Optional<EquipmentSlot> getSlotWithBag(PlayerEntity player) {
-        return Arrays.stream(EquipmentSlot.values())
-            .filter(slot -> player.getEquippedStack(slot).getItem() instanceof BagItem bagItem
-                         && bagItem.getSlotType() == slot)
-            .findFirst();
+    public static Optional<EquipmentSlot> getFirstBag(PlayerEntity player) {
+
+        ItemStack stack;
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+
+            stack = player.getEquippedStack(slot);
+            if (!(stack.getItem() instanceof BagItem bagItem)) {
+                continue;
+            }
+
+            if (bagItem.getSlotType() == slot && bagItem.getState(stack) == BagState.OPENED) {
+                return Optional.of(slot);
+            }
+
+        }
+
+        return Optional.empty();
+
     }
 
     @ApiStatus.Internal
@@ -139,62 +219,54 @@ public class BagItem extends Item implements Equipment, BagContainer {
             return;
         }
 
-        if (currentStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
-            openHandler(player, currentStack);
-        }
-
-        else if (previousStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
+        if (previousStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
             closeHandler(player);
         }
 
-    }
-
-    public static void openHandler(ServerPlayerEntity player, ItemStack bagStack) {
-
-        if (!(bagStack.getItem() instanceof BagItem bagItem)) {
-            return;
-        }
-
-        ItemStack prevCursorStack = player.currentScreenHandler.getCursorStack().copy();
-        boolean shouldResetCursorStack = !prevCursorStack.isEmpty();
-
-        if (shouldResetCursorStack) {
-            player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
-        }
-
-        player.openHandledScreen(bagItem.asDelegatedBagInventory(player, bagStack));
-        player.currentScreenHandler.sendContentUpdates();
-
-        if (shouldResetCursorStack) {
-            player.currentScreenHandler.setCursorStack(prevCursorStack);
-            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, player.currentScreenHandler.nextRevision(), -1, prevCursorStack));
+        if (currentStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
+            openHandler(player, currentStack, false);
         }
 
     }
 
-    public static void closeHandler(ServerPlayerEntity player) {
+    public static void openHandler(PlayerEntity player, ItemStack bagStack, boolean force) {
 
-        if (!(player.currentScreenHandler instanceof BagScreenHandler)) {
-            player.currentScreenHandler.sendContentUpdates();
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        if (!(bagStack.getItem() instanceof BagItem bagItem) || (!force && serverPlayer.currentScreenHandler instanceof BagScreenHandler)) {
+            return;
+        }
+
+        ItemStack prevCursorStack = serverPlayer.currentScreenHandler.getCursorStack().copy();
+        serverPlayer.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
+
+        serverPlayer.openHandledScreen(bagItem.asDelegatedBagInventory(serverPlayer, bagStack));
+
+        serverPlayer.currentScreenHandler.setCursorStack(prevCursorStack);
+        serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, serverPlayer.currentScreenHandler.nextRevision(), -1, prevCursorStack));
+
+    }
+
+    public static void closeHandler(PlayerEntity player) {
+
+        if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+            return;
+        }
+
+        if (!(serverPlayer.currentScreenHandler instanceof BagScreenHandler bagScreenHandler)) {
             return;
         }
 
         ItemStack prevCursorStack = player.currentScreenHandler.getCursorStack().copy();
-        boolean shouldResetCursorStack = !prevCursorStack.isEmpty();
+        serverPlayer.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
 
-        if (shouldResetCursorStack) {
-            player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
-        }
+        serverPlayer.onHandledScreenClosed();
+        ServerPlayNetworking.send(serverPlayer, new OpenInventoryS2CPacket());
 
-        player.onHandledScreenClosed();
-        player.currentScreenHandler.sendContentUpdates();
-
-        ServerPlayNetworking.send(player, new OpenInventoryS2CPacket());
-
-        if (shouldResetCursorStack) {
-            player.currentScreenHandler.setCursorStack(prevCursorStack);
-            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, player.currentScreenHandler.nextRevision(), -1, prevCursorStack));
-        }
+        serverPlayer.currentScreenHandler.setCursorStack(prevCursorStack);
+        serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, serverPlayer.currentScreenHandler.nextRevision(), -1, prevCursorStack));
 
     }
 

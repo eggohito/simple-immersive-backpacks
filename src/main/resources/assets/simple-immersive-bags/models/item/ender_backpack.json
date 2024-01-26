@@ -1,6 +1,14 @@
 {
     "parent": "item/generated",
     "textures": {
-        "layer0": "simple-immersive-bags:item/ender_backpack"
-    }
+        "layer0": "simple-immersive-bags:item/ender_backpack/closed"
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "simple-immersive-bags:state": 1
+            },
+            "model": "simple-immersive-bags:item/ender_backpack/opened"
+        }
+    ]
 }

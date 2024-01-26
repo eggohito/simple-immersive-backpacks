@@ -5,6 +5,7 @@ import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
 import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
+import com.github.eggohito.simple_immersive_bags.util.BagState;
 import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.EquipmentSlot;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("unused")
 public class BagInventory extends GridInventory implements ExtendedScreenHandlerFactory {
 
-    public static final BagInventory EMPTY = new BagInventory(ItemStack.EMPTY, SimpleImmersiveBags.id("textures/gui/backpack.png"), false, 0, 0) {
+    public static final BagInventory EMPTY = new BagInventory(ItemStack.EMPTY, SimpleImmersiveBags.id("textures/gui/backpack.png"), false, false, 0, 0) {
 
         @Override
         public void load() {
@@ -39,26 +40,26 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
     private final Identifier screenTextureId;
     private final ItemStack sourceStack;
 
+    private final boolean load;
     private final boolean save;
+
     private boolean dirty;
 
-    public BagInventory(ItemStack sourceStack, Identifier screenTextureId, boolean shouldSave, int rows, int columns) {
+    public BagInventory(ItemStack sourceStack, Identifier screenTextureId, boolean shouldSave, boolean shouldLoad, int rows, int columns) {
         super(rows, columns);
         this.screenTextureId = screenTextureId;
         this.sourceStack = sourceStack;
         this.save = shouldSave;
+        this.load = shouldLoad;
     }
 
     public BagInventory(ItemStack sourceStack, Identifier screenTextureId, int rows, int columns) {
-        super(rows, columns);
-        this.screenTextureId = screenTextureId;
-        this.sourceStack = sourceStack;
-        this.save = true;
+        this(sourceStack, screenTextureId, true, true, rows, columns);
     }
 
     @Override
     public void writeScreenOpeningData(ServerPlayerEntity player, PacketByteBuf buf) {
-        this.write(buf);
+        this.send(buf);
     }
 
     @Override
@@ -83,15 +84,40 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
 
     @Override
     public void onOpen(PlayerEntity player) {
-        this.load();
+
+        if (player.getWorld().isClient) {
+            return;
+        }
+
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
+        if (bagContainer != null) {
+            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.OPEN);
+            bagContainer.setState(sourceStack, BagState.OPENED);
+        }
+
+        if (load) {
+            this.load();
+        }
+
     }
 
     @Override
     public void onClose(PlayerEntity player) {
-        if (!player.getWorld().isClient && dirty && save) {
-            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.SAVE);
+
+        if (player.getWorld().isClient) {
+            return;
+        }
+
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
+        if (bagContainer != null) {
+            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.CLOSE);
+            bagContainer.setState(sourceStack, BagState.CLOSED);
+        }
+
+        if (dirty && save) {
             this.save();
         }
+
     }
 
     @Override
@@ -111,11 +137,15 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         return save;
     }
 
+    public boolean loadable() {
+        return load;
+    }
+
     public boolean isDirty() {
         return dirty;
     }
 
-    public void write(PacketByteBuf buf) {
+    public void send(PacketByteBuf buf) {
 
         if (!(this.getSourceStack().getItem() instanceof BagItem bagItem)) {
             buf.writeBoolean(true);
@@ -131,6 +161,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         buf.writeVarInt(this.getColumns());
 
         buf.writeBoolean(this.saveable());
+        buf.writeBoolean(this.loadable());
 
     }
 
@@ -147,17 +178,22 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         int columns = buf.readVarInt();
 
         boolean saveable = buf.readBoolean();
-        return new BagInventory(player.getEquippedStack(bagSlot), screenTextureId, saveable, rows, columns);
+        boolean loadable = buf.readBoolean();
+
+        return new BagInventory(player.getEquippedStack(bagSlot), screenTextureId, saveable, loadable, rows, columns);
 
     }
 
     public void load() {
 
-        ItemStack sourceStack = this.getSourceStack();
         BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
-
         if (bagContainer == null) {
             SimpleImmersiveBags.LOGGER.error("Tried loading the bag inventory contents of item {}, which isn't a bag item!", sourceStack);
+            return;
+        }
+
+        if (!load) {
+            SimpleImmersiveBags.LOGGER.warn("Tried loading the bag inventory contents of item {}, which can't be loaded!", sourceStack);
             return;
         }
 
@@ -170,9 +206,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
 
     public void save() {
 
-        ItemStack sourceStack = this.getSourceStack();
         BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
-
         if (bagContainer == null) {
             SimpleImmersiveBags.LOGGER.warn("Tried saving the bag inventory contents of item {}, which isn't a bag item!", sourceStack);
             return;
