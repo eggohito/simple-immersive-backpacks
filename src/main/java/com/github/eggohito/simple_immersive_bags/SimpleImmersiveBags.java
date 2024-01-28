@@ -38,8 +38,6 @@ public class SimpleImmersiveBags implements ModInitializer {
 	public static Item BACKPACK;
 	public static Item ENDER_BACKPACK;
 
-	public static Item TOOLBELT;
-
 	@Override
 	public void onInitialize() {
 
@@ -70,11 +68,9 @@ public class SimpleImmersiveBags implements ModInitializer {
 		BACKPACK = registerItem(id("backpack"), () -> new DyeableBagItem(id("textures/gui/backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 3, 9));
 		ENDER_BACKPACK = registerItem(id("ender_backpack"), () -> new EnderBagItem(id("textures/gui/ender_backpack.png"), EquipmentSlot.CHEST, SoundEvents.ITEM_ARMOR_EQUIP_LEATHER));
 
-		TOOLBELT = registerItem(id("toolbelt"), () -> new DyeableBagItem(id("textures/gui/backpack.png"), EquipmentSlot.LEGS, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, 3, 3));
-
 		//	Add the items to an item group
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries ->
-			entries.addAfter(Items.NETHERITE_BOOTS, BACKPACK.getDefaultStack(), ENDER_BACKPACK.getDefaultStack(), TOOLBELT.getDefaultStack())
+			entries.addAfter(Items.NETHERITE_BOOTS, BACKPACK.getDefaultStack(), ENDER_BACKPACK.getDefaultStack())
 		);
 
 		//	Register callback event for stuff
