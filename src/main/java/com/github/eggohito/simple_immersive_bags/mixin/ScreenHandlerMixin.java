@@ -2,186 +2,109 @@ package com.github.eggohito.simple_immersive_bags.mixin;
 
 import com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags;
 import com.github.eggohito.simple_immersive_bags.api.BagContainer;
-import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
-import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
-import com.github.eggohito.simple_immersive_bags.inventory.BagInventory;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
-import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
+import com.github.eggohito.simple_immersive_bags.util.BagState;
 import com.github.eggohito.simple_immersive_bags.util.BagUtil;
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.ClickType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerMixin {
 
-    @Shadow public abstract Slot getSlot(int index);
-
     @Shadow public abstract ItemStack getCursorStack();
 
-    @Shadow public abstract boolean isValid(int slot);
+    @Inject(method = "internalOnSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;onPickupSlotClick(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;Lnet/minecraft/util/ClickType;)V"))
+    private void sib$saveBagOnPickup(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci, @Local Slot slot) {
 
-    @Inject(method = "onSlotClick", at = @At("HEAD"))
-    private void sib$closeBagInventory(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
-
-        if (player.getWorld().isClient) {
+        if (player.getWorld().isClient || button == 1) {
             return;
         }
 
-        boolean result = switch (actionType) {
-            case QUICK_MOVE -> {
+        ItemStack slotStack = slot.getStack();
 
-                if (!BagUtil.withinEquipmentBounds(slotIndex)) {
-                    yield false;
-                }
+        if (!BagUtil.withinEquipmentBounds(player, slot) || ItemStack.areEqual(slotStack, this.getCursorStack())) {
+            return;
+        }
 
-                ItemStack stackInSlot = this.getSlot(slotIndex).getStack();
-                BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stackInSlot, null);
+        BagContainer slotBagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(slotStack, null);
 
-                if (bagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-                    bagScreenHandler.getBagInventory().onClose(player);
-                    yield true;
-                }
-
-                yield false;
-
-            }
-            case PICKUP -> {
-
-                if (!this.isValid(slotIndex) || !BagUtil.withinEquipmentBounds(slotIndex)) {
-                    yield false;
-                }
-
-                ItemStack stackInSlot = this.getSlot(slotIndex).getStack();
-                if (ItemStack.areEqual(stackInSlot, this.getCursorStack())) {
-                    yield false;
-                }
-
-                BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stackInSlot, null);
-                if (bagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-
-                    BagInventory bagInventory = bagScreenHandler.getBagInventory();
-
-                    if (button == 0) {
-                        bagInventory.onClose(player);
-                    }
-
-                    else if (bagInventory.isDirty() && bagInventory.saveable()) {
-                        bagInventory.save();
-                    }
-
-                    yield true;
-
-                }
-
-                yield false;
-
-            }
-            case SWAP -> {
-
-                if (!(button >= 0 && button < 9 || button == 40) || !BagUtil.withinEquipmentBounds(slotIndex)) {
-                    yield false;
-                }
-
-                Slot slot = this.getSlot(slotIndex);
-
-                ItemStack stackInSwapSlot = player.getInventory().getStack(button);
-                ItemStack stackInSlot = slot.getStack();
-
-                if (ItemStack.areEqual(stackInSwapSlot, stackInSlot)) {
-                    yield false;
-                }
-
-                BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stackInSlot, null);
-                if (stackInSwapSlot.isEmpty() && slot.canTakeItems(player)) {
-
-                    if (bagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-                        bagScreenHandler.getBagInventory().onClose(player);
-                        yield true;
-                    }
-
-                }
-
-                else if (slot.canTakeItems(player) && slot.canInsert(stackInSwapSlot)) {
-
-                    if (bagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-                        bagScreenHandler.getBagInventory().onClose(player);
-                        yield true;
-                    }
-
-                }
-
-                yield false;
-
-            }
-            case THROW -> {
-
-                if (!this.getCursorStack().isEmpty()) {
-                    yield false;
-                }
-
-                ItemStack stackInSlot = this.getSlot(slotIndex).getStack();
-                BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stackInSlot, null);
-
-                if (bagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-                    bagScreenHandler.getBagInventory().onClose(player);
-                    yield true;
-                }
-
-                yield false;
-
-            }
-            default ->
-                false;
-        };
-
-        if (result) {
-            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.NONE);
+        if (slotBagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
+            bagScreenHandler.getBagInventory().onClose(player);
+            slotBagContainer.setState(slotStack, BagState.CLOSED);
         }
 
     }
 
-    @Inject(method = "onSlotClick", at = @At("TAIL"))
-    private void sib$openOrCloseBag(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+    @Inject(method = "internalOnSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;quickMove(Lnet/minecraft/entity/player/PlayerEntity;I)Lnet/minecraft/item/ItemStack;", ordinal = 0))
+    private void sib$saveBagOnQuickMove(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci, @Local Slot slot) {
 
         if (player.getWorld().isClient) {
             return;
         }
 
-        if (actionType != SlotActionType.PICKUP || button < 0 || button > 1 || !this.isValid(slotIndex)) {
+        ItemStack slotStack = slot.getStack();
+        BagContainer slotBagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(slotStack, null);
+
+        if (slotBagContainer == null || !BagUtil.withinEquipmentBounds(player, slot)) {
             return;
         }
 
-        ClickType clickType = button == 0 ? ClickType.LEFT : ClickType.RIGHT;
+        if (thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
+            bagScreenHandler.getBagInventory().onClose(player);
+            slotBagContainer.setState(slotStack, BagState.CLOSED);
+        }
 
-        ItemStack stackInSlot = this.getSlot(slotIndex).getStack();
-        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(stackInSlot, null);
+    }
 
-        if (clickType != ClickType.RIGHT || bagContainer == null) {
+    @Inject(method = "internalOnSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/slot/Slot;getStack()Lnet/minecraft/item/ItemStack;", ordinal = 0), slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/screen/slot/SlotActionType;SWAP:Lnet/minecraft/screen/slot/SlotActionType;")))
+    private void sib$saveBagOnSwap(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci, @Local Slot slot) {
+
+        if (player.getWorld().isClient) {
             return;
         }
 
-        switch (bagContainer.getState(stackInSlot)) {
-            case CLOSED ->
-                BagItem.closeHandler(player);
-            case OPENED -> {
+        ItemStack swapStack = player.getInventory().getStack(button);
+        ItemStack slotStack = slot.getStack();
 
-                if (thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
-                    bagScreenHandler.getBagInventory().onClose(player);
-                }
+        if (!BagUtil.withinEquipmentBounds(player, slot) || ItemStack.areEqual(swapStack, slotStack)) {
+            return;
+        }
 
-                BagItem.openHandler(player, stackInSlot, true);
+        if ((swapStack.isEmpty() && slot.canTakeItems(player)) || (slot.canTakeItems(player) && slot.canInsert(swapStack))) {
 
+            BagContainer slotBagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(slotStack, null);
+
+            if (slotBagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
+                bagScreenHandler.getBagInventory().onClose(player);
+                slotBagContainer.setState(slotStack, BagState.CLOSED);
             }
+
+        }
+
+    }
+
+    @Inject(method = "internalOnSlotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/ItemEntity;", ordinal = 0), slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/screen/slot/SlotActionType;THROW:Lnet/minecraft/screen/slot/SlotActionType;")))
+    private void sib$saveBagOnThrow(int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci, @Local Slot slot, @Local ItemStack dropStack) {
+
+        if (player.getWorld().isClient) {
+            return;
+        }
+
+        BagContainer dropBagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(dropStack, null);
+
+        if (dropBagContainer != null && thisAsScreenHandler() instanceof BagScreenHandler bagScreenHandler) {
+            bagScreenHandler.getBagInventory().onClose(player);
         }
 
     }

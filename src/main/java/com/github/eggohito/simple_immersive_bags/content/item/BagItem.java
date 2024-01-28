@@ -103,8 +103,12 @@ public class BagItem extends Item implements Equipment, BagContainer {
     @Override
     public boolean onClicked(ItemStack stack, ItemStack otherStack, Slot slot, ClickType clickType, PlayerEntity player, StackReference cursorStackReference) {
 
-        if (!BagUtil.withinEquipmentBounds(slot.id) || clickType == ClickType.LEFT || !stack.isOf(this)) {
+        if (!BagUtil.withinEquipmentBounds(player, slot) || clickType == ClickType.LEFT) {
             return false;
+        }
+
+        if (player.getWorld().isClient) {
+            return true;
         }
 
         return switch (this.getState(stack)) {
@@ -181,17 +185,19 @@ public class BagItem extends Item implements Equipment, BagContainer {
         itemContainerNbt.putString("State", state.asString());
     }
 
+    @Override
     public BagInventory asDelegatedBagInventory(LivingEntity holder, ItemStack stack) {
         return this.asBagInventory(stack);
     }
 
+    @Override
     public BagInventory asBagInventory(ItemStack stack) {
         return stack.isOf(this)
             ? new BagInventory(stack, screenTextureId, initialRows, initialColumns)
             : BagInventory.EMPTY;
     }
 
-    public static Optional<EquipmentSlot> getFirstBag(PlayerEntity player) {
+    public static Optional<EquipmentSlot> getFirstOpenedBag(PlayerEntity player) {
 
         ItemStack stack;
 
@@ -219,43 +225,67 @@ public class BagItem extends Item implements Equipment, BagContainer {
             return;
         }
 
+        if (ItemStack.areEqual(previousStack, currentStack)) {
+            return;
+        }
+
         if (previousStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
             closeHandler(player);
         }
 
         if (currentStack.getItem() instanceof BagItem bagItem && equipmentSlot == bagItem.getSlotType()) {
-            openHandler(player, currentStack, false);
+            openHandler(player, currentStack);
         }
 
     }
 
-    public static void openHandler(PlayerEntity player, ItemStack bagStack, boolean force) {
+    private static void openHandler(PlayerEntity player, ItemStack bagStack) {
 
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
             return;
         }
 
-        if (!(bagStack.getItem() instanceof BagItem bagItem) || (!force && serverPlayer.currentScreenHandler instanceof BagScreenHandler)) {
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(bagStack, null);
+        if (bagContainer == null || bagContainer.getState(bagStack) == BagState.CLOSED) {
             return;
+        }
+
+        if (player.currentScreenHandler instanceof BagScreenHandler prevBagScreenHandler) {
+
+            ItemStack prevBagStack = prevBagScreenHandler.getSourceStack();
+            BagContainer prevBagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(prevBagStack, null);
+
+            if (prevBagContainer != null) {
+                prevBagScreenHandler.getBagInventory().onClose(player);
+                prevBagContainer.setState(prevBagStack, BagState.CLOSED);
+            }
+
         }
 
         ItemStack prevCursorStack = serverPlayer.currentScreenHandler.getCursorStack().copy();
         serverPlayer.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
 
-        serverPlayer.openHandledScreen(bagItem.asDelegatedBagInventory(serverPlayer, bagStack));
+        serverPlayer.openHandledScreen(bagContainer.asDelegatedBagInventory(serverPlayer, bagStack));
 
         serverPlayer.currentScreenHandler.setCursorStack(prevCursorStack);
         serverPlayer.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-1, serverPlayer.currentScreenHandler.nextRevision(), -1, prevCursorStack));
 
     }
 
-    public static void closeHandler(PlayerEntity player) {
+    private static void closeHandler(PlayerEntity player) {
 
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
             return;
         }
 
         if (!(serverPlayer.currentScreenHandler instanceof BagScreenHandler bagScreenHandler)) {
+            return;
+        }
+
+        ItemStack bagStack = bagScreenHandler.getSourceStack();
+        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(bagStack, null);
+
+        if (bagContainer != null && bagContainer.getState(bagStack) == BagState.OPENED) {
             return;
         }
 

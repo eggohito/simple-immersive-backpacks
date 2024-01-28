@@ -3,10 +3,7 @@ package com.github.eggohito.simple_immersive_bags.inventory;
 import com.github.eggohito.simple_immersive_bags.SimpleImmersiveBags;
 import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
-import com.github.eggohito.simple_immersive_bags.duck.EntityBagUpdateStatus;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
-import com.github.eggohito.simple_immersive_bags.util.BagState;
-import com.github.eggohito.simple_immersive_bags.util.BagUpdateStatus;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
@@ -85,17 +82,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
     @Override
     public void onOpen(PlayerEntity player) {
 
-        if (player.getWorld().isClient) {
-            return;
-        }
-
-        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
-        if (bagContainer != null) {
-            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.OPEN);
-            bagContainer.setState(sourceStack, BagState.OPENED);
-        }
-
-        if (load) {
+        if (!player.getWorld().isClient && load) {
             this.load();
         }
 
@@ -104,17 +91,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
     @Override
     public void onClose(PlayerEntity player) {
 
-        if (player.getWorld().isClient) {
-            return;
-        }
-
-        BagContainer bagContainer = SimpleImmersiveBags.ITEM_CONTAINER.find(sourceStack, null);
-        if (bagContainer != null) {
-            ((EntityBagUpdateStatus) player).sib$setStatus(BagUpdateStatus.CLOSE);
-            bagContainer.setState(sourceStack, BagState.CLOSED);
-        }
-
-        if (dirty && save) {
+        if (!player.getWorld().isClient && dirty && save) {
             this.save();
         }
 

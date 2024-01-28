@@ -29,7 +29,7 @@ public abstract class MinecraftClientMixin {
 	private void sib$overrideInventoryScreen(MinecraftClient instance, Screen screen, Operation<Void> original) {
 
 		Optional<EquipmentSlot> slotWithBag;
-		if (this.player != null && !(this.currentScreen instanceof BagScreen) && (slotWithBag = BagItem.getFirstBag(player)).isPresent()) {
+		if (this.player != null && !(this.currentScreen instanceof BagScreen) && (slotWithBag = BagItem.getFirstOpenedBag(player)).isPresent()) {
 			ClientPlayNetworking.send(new OpenBagC2SPacket(slotWithBag.get()));
 		}
 

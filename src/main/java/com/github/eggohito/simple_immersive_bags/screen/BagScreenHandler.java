@@ -93,8 +93,8 @@ public class BagScreenHandler extends PlayerScreenHandler {
 
     @Override
     public void onClosed(PlayerEntity player) {
-        super.onClosed(player);
         bagInventory.onClose(player);
+        super.onClosed(player);
     }
 
     @Override
