@@ -35,8 +35,6 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.Optional;
-
 @SuppressWarnings("unused")
 public class BagItem extends Item implements Equipment, BagContainer {
 
@@ -195,27 +193,6 @@ public class BagItem extends Item implements Equipment, BagContainer {
         return stack.isOf(this)
             ? new BagInventory(stack, screenTextureId, initialRows, initialColumns)
             : BagInventory.EMPTY;
-    }
-
-    public static Optional<EquipmentSlot> getFirstOpenedBag(PlayerEntity player) {
-
-        ItemStack stack;
-
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-
-            stack = player.getEquippedStack(slot);
-            if (!(stack.getItem() instanceof BagItem bagItem)) {
-                continue;
-            }
-
-            if (bagItem.getSlotType() == slot && bagItem.getState(stack) == BagState.OPENED) {
-                return Optional.of(slot);
-            }
-
-        }
-
-        return Optional.empty();
-
     }
 
     @ApiStatus.Internal
