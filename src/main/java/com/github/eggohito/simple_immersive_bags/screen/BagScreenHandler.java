@@ -13,21 +13,16 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
+import org.joml.Vector2i;
 
-@SuppressWarnings("unused")
 public class BagScreenHandler extends PlayerScreenHandler {
 
     public static final int BAG_TITLE_Y_OFFSET = 11;
-    public static final int BAG_SLOT_Y_OFFSET = 58;
-    public static final int BAG_SLOT_INDEX_OFFSET = INVENTORY_END;
 
     private final BagInventory bagInventory;
 
-    private final int topSlotX;
-    private final int topSlotY;
-
-    private final int offhandSlotX;
-    private final int offhandSlotY;
+    private final Vector2i topPos;
+    private final Vector2i offhandPos;
 
     private final int bagStart;
     private final int bagEnd;
@@ -47,39 +42,31 @@ public class BagScreenHandler extends PlayerScreenHandler {
 
         //  Query the top-left most slot from the player's inventory
         Slot topSlot = this.getSlot(9);
-
-        //  Query the X and Y values of the top-left most slot from the player's inventory
-        //  (used to determine the placement of the bag's slots)
-        this.topSlotX = topSlot.x;
-        this.topSlotY = topSlot.y;
+        this.topPos = new Vector2i(topSlot.x, topSlot.y);
 
         //  Offset the player's inventory and hotbar slots added in PlayerScreenHandler
         this.slots.stream()
             .filter(slot -> slot.inventory == playerInventory && slot.getIndex() < playerInventory.size() - 5)
-            .forEach(slot -> ((SlotAccessor) slot).setY(slot.y + BAG_SLOT_Y_OFFSET + BAG_TITLE_Y_OFFSET));
+            .forEach(slot -> ((SlotAccessor) slot).setY(slot.y + (bagInventory.getRows() * 18 + 4 + BAG_TITLE_Y_OFFSET)));
 
         //  Query the offhand slot from the player's inventory
         Slot offhandSlot = this.getSlot(OFFHAND_ID);
-
-        //  Query the X and Y values of the offhand slot from the player's inventory
-        //  (used to determine the placement of the moved recipe book widget)
-        this.offhandSlotX = offhandSlot.x;
-        this.offhandSlotY = offhandSlot.y;
+        this.offhandPos = new Vector2i(offhandSlot.x, offhandSlot.y);
 
         int bagRows = bagInventory.getRows();
         int bagColumns = bagInventory.getColumns();
 
-        int bagSlotIndex = BAG_SLOT_INDEX_OFFSET;
+        int bagSlotIndex = bagStart;
 
         for (int rowIndex = 0; rowIndex < bagRows; rowIndex++) {
             for (int columnIndex = 0; columnIndex < bagColumns; columnIndex++) {
 
                 //  Calculate the X and Y values for the bag's slot
-                int bagSlotX = topSlotX + columnIndex * 18;
-                int bagSlotY = (topSlotY + rowIndex * 18) + BAG_TITLE_Y_OFFSET;
+                int bagSlotX = topPos.x + columnIndex * 18;
+                int bagSlotY = (topPos.y + rowIndex * 18) + BAG_TITLE_Y_OFFSET;
 
                 //  Add the slot that corresponds to the bag's inventory with the calculated slot index
-                this.addSlot(new BagSlot(bagInventory, bagSlotIndex++, bagSlotX, bagSlotY));
+                this.addSlot(new BagSlot(bagInventory, bagSlotIndex++, bagStart, bagSlotX, bagSlotY));
 
             }
         }
@@ -206,28 +193,12 @@ public class BagScreenHandler extends PlayerScreenHandler {
         return bagInventory;
     }
 
-    public int getRows() {
-        return bagInventory.getRows();
+    public Vector2i getTopPos() {
+        return topPos;
     }
 
-    public int getColumns() {
-        return bagInventory.getColumns();
-    }
-
-    public int getOffhandSlotX() {
-        return offhandSlotX;
-    }
-
-    public int getOffhandSlotY() {
-        return offhandSlotY;
-    }
-
-    public int getTopSlotX() {
-        return topSlotX;
-    }
-
-    public int getTopSlotY() {
-        return topSlotY;
+    public Vector2i getOffhandPos() {
+        return offhandPos;
     }
 
 }

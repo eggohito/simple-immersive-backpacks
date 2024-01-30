@@ -64,7 +64,7 @@ public class BagScreen extends InventoryScreen {
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
 
         super.drawForeground(context, mouseX, mouseY);
-        context.drawText(textRenderer, title, bagScreenHandler.getTopSlotX() + 1, bagScreenHandler.getTopSlotY() + 1, defaultTextColor, true);
+        context.drawText(textRenderer, title, bagScreenHandler.getTopPos().x + 1, bagScreenHandler.getTopPos().y + 1, defaultTextColor, true);
 
         this.moveRecipeButtonWidget();
 
@@ -143,7 +143,7 @@ public class BagScreen extends InventoryScreen {
             }
 
             if (identifiedButtonWidget.sib$equals(SimpleImmersiveBagsClient.VANILLA_RECIPE_BOOK_WIDGET_ID)) {
-                buttonWidget.setPosition(buttonWidget.getX(), bagScreenHandler.getOffhandSlotY());
+                buttonWidget.setPosition(buttonWidget.getX(), bagScreenHandler.getOffhandPos().y);
             }
 
         }
