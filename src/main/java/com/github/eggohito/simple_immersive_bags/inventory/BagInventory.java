@@ -5,7 +5,6 @@ import com.github.eggohito.simple_immersive_bags.api.BagContainer;
 import com.github.eggohito.simple_immersive_bags.content.item.BagItem;
 import com.github.eggohito.simple_immersive_bags.screen.BagScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -82,7 +81,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
     @Override
     public void onOpen(PlayerEntity player) {
 
-        if (!player.getWorld().isClient && load) {
+        if (load) {
             this.load();
         }
 
@@ -91,7 +90,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
     @Override
     public void onClose(PlayerEntity player) {
 
-        if (!player.getWorld().isClient && dirty && save) {
+        if (dirty && save) {
             this.save();
         }
 
@@ -124,7 +123,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
 
     public void send(PacketByteBuf buf) {
 
-        if (!(this.getSourceStack().getItem() instanceof BagItem bagItem)) {
+        if (SimpleImmersiveBags.ITEM_CONTAINER.find(this.getSourceStack(), null) == null) {
             buf.writeBoolean(true);
             return;
         }
@@ -132,7 +131,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         buf.writeBoolean(false);
 
         buf.writeIdentifier(this.getScreenTextureId());
-        buf.writeEnumConstant(bagItem.getSlotType());
+        buf.writeItemStack(this.getSourceStack());
 
         buf.writeVarInt(this.getRows());
         buf.writeVarInt(this.getColumns());
@@ -149,7 +148,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         }
 
         Identifier screenTextureId = buf.readIdentifier();
-        EquipmentSlot bagSlot = buf.readEnumConstant(EquipmentSlot.class);
+        ItemStack sourceStack = buf.readItemStack();
 
         int rows = buf.readVarInt();
         int columns = buf.readVarInt();
@@ -157,7 +156,7 @@ public class BagInventory extends GridInventory implements ExtendedScreenHandler
         boolean saveable = buf.readBoolean();
         boolean loadable = buf.readBoolean();
 
-        return new BagInventory(player.getEquippedStack(bagSlot), screenTextureId, saveable, loadable, rows, columns);
+        return new BagInventory(sourceStack, screenTextureId, saveable, loadable, rows, columns);
 
     }
 
